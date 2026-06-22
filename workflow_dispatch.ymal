@@ -1,0 +1,22 @@
+name: Calculate File Hash
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: "URL of the file to download"
+        required: true
+        type: string
+
+jobs:
+  hash-file:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download file
+        run: |
+          curl -L "${{ github.event.inputs.file_url }}" -o downloaded_file
+
+      - name: Calculate SHA256
+        run: |
+          sha256sum downloaded_file
