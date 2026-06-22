@@ -1,4 +1,4 @@
-name: Calculate File Hash
+name: Download and Hash
 
 on:
   workflow_dispatch:
@@ -8,22 +8,33 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
-  hash-file:
+  hash:
     runs-on: ubuntu-latest
 
-    outputs:
-      sha256: ${{ steps.hash.outputs.sha256 }}
-
     steps:
-      - name: Download file
-        run: curl -L "${{ github.event.inputs.file_url }}" -o file.bin
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Calculate hash
-        id: hash
+      - name: Download and calculate hash
         run: |
-          HASH=$(sha256sum file.bin | awk '{print $1}')
-          echo "sha256=$HASH" >> "$GITHUB_OUTPUT"
+          HASH=$(curl -L "${{ github.event.inputs.file_url }}" | sha256sum | awk '{print $1}')
+          echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") $HASH ${{ github.event.inputs.file_url }}" >> hashes.txt
 
-      - name: Show hash
-        run: echo "SHA256 = ${{ steps.hash.outputs.sha256 }}"
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add hashes.txt
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Add hash entry"
+          git push
