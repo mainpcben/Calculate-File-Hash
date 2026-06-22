@@ -1,0 +1,29 @@
+name: Calculate File Hash
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_url:
+        description: "URL of the file"
+        required: true
+        type: string
+
+jobs:
+  hash-file:
+    runs-on: ubuntu-latest
+
+    outputs:
+      sha256: ${{ steps.hash.outputs.sha256 }}
+
+    steps:
+      - name: Download file
+        run: curl -L "${{ github.event.inputs.file_url }}" -o file.bin
+
+      - name: Calculate hash
+        id: hash
+        run: |
+          HASH=$(sha256sum file.bin | awk '{print $1}')
+          echo "sha256=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Show hash
+        run: echo "SHA256 = ${{ steps.hash.outputs.sha256 }}"
