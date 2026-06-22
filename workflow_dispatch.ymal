@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       file_url:
-        description: "URL of the file to download"
+        description: "URL of the file"
         required: true
         type: string
 
@@ -12,11 +12,18 @@ jobs:
   hash-file:
     runs-on: ubuntu-latest
 
+    outputs:
+      sha256: ${{ steps.hash.outputs.sha256 }}
+
     steps:
       - name: Download file
-        run: |
-          curl -L "${{ github.event.inputs.file_url }}" -o downloaded_file
+        run: curl -L "${{ github.event.inputs.file_url }}" -o file.bin
 
-      - name: Calculate SHA256
+      - name: Calculate hash
+        id: hash
         run: |
-          sha256sum downloaded_file
+          HASH=$(sha256sum file.bin | awk '{print $1}')
+          echo "sha256=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Show hash
+        run: echo "SHA256 = ${{ steps.hash.outputs.sha256 }}"
